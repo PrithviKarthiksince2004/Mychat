@@ -1,23 +1,4 @@
 services:
-  - type: pserv
-    name: mychat-mysql
-    runtime: docker
-    repo: https://github.com/render-examples/mysql
-    plan: starter
-    envVars:
-      - key: MYSQL_DATABASE
-        value: whatsapp_clone
-      - key: MYSQL_USER
-        value: mychat
-      - key: MYSQL_PASSWORD
-        generateValue: true
-      - key: MYSQL_ROOT_PASSWORD
-        generateValue: true
-    disk:
-      name: mysql-data
-      mountPath: /var/lib/mysql
-      sizeGB: 10
-
   - type: web
     name: mychat
     runtime: docker
@@ -26,31 +7,17 @@ services:
     plan: free
     healthCheckPath: /
     envVars:
+      # Use your Railway (or other) MySQL credentials — Render has no free managed MySQL
       - key: MYSQLHOST
-        fromService:
-          name: mychat-mysql
-          type: pserv
-          property: host
+        sync: false
       - key: MYSQLPORT
-        fromService:
-          name: mychat-mysql
-          type: pserv
-          property: port
+        sync: false
       - key: MYSQLDATABASE
-        fromService:
-          name: mychat-mysql
-          type: pserv
-          envVarKey: MYSQL_DATABASE
+        sync: false
       - key: MYSQLUSER
-        fromService:
-          name: mychat-mysql
-          type: pserv
-          envVarKey: MYSQL_USER
+        sync: false
       - key: MYSQLPASSWORD
-        fromService:
-          name: mychat-mysql
-          type: pserv
-          envVarKey: MYSQL_PASSWORD
+        sync: false
       - key: JWT_SECRET
         generateValue: true
       - key: UPLOAD_DIR
