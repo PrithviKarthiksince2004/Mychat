@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>WhatsApp Clone</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.6.1/dist/sockjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1/index.js"></script>
+</head>
+<body>
+
+  <!-- ===== LOGIN / REGISTER SCREEN ===== -->
+  <div id="auth-screen" class="auth-screen">
+    <div class="auth-box">
+      <h1>WhatsApp Clone</h1>
+      
+      <div id="login-section">
+        <input id="auth-username" type="text" placeholder="Username" />
+        <input id="auth-password" type="password" placeholder="Password" />
+        <div class="auth-buttons">
+          <button onclick="handleLogin()">Login</button>
+          <button onclick="handleRegister()" class="secondary">Register</button>
+        </div>
+        <div style="margin-top:15px;">
+          <a href="#" onclick="showForgotSection()" style="color: #00a884; font-size: 13px; text-decoration: none;">Forgot Password?</a>
+        </div>
+      </div>
+
+      <div id="forgot-section" class="hidden">
+        <h3 style="margin-bottom:15px; color:#e9edef; font-size:18px;">Forgot Password</h3>
+        <input id="forgot-username" type="text" placeholder="Username" />
+        <div class="auth-buttons">
+          <button onclick="handleForgotPassword()">Get Reset Token</button>
+        </div>
+        <div id="token-box" class="hidden" style="margin-top:15px; background:#2a3942; padding:10px; border-radius:6px; font-size:12px; text-align:left;">
+          Copy this token: <div id="reset-token-display" style="word-break:break-all; font-weight:bold; margin-top:5px; color:#00e676; user-select:all;"></div>
+        </div>
+        <div style="margin-top:15px; display:flex; flex-direction:column; gap:8px; font-size:13px;">
+          <a href="#" onclick="showResetSection()" style="color:#00a884; text-decoration:none;">Go to Reset Password</a>
+          <a href="#" onclick="showLoginSection()" style="color:#8696a0; text-decoration:none;">Back to Login</a>
+        </div>
+      </div>
+
+      <div id="reset-section" class="hidden">
+        <h3 style="margin-bottom:15px; color:#e9edef; font-size:18px;">Reset Password</h3>
+        <input id="reset-token" type="text" placeholder="Reset Token" />
+        <input id="reset-new-password" type="password" placeholder="New Password" />
+        <div class="auth-buttons">
+          <button onclick="handleResetPassword()">Reset Password</button>
+        </div>
+        <div style="margin-top:15px; font-size:13px;">
+          <a href="#" onclick="showLoginSection()" style="color:#8696a0; text-decoration:none;">Back to Login</a>
+        </div>
+      </div>
+
+      <p id="auth-error" class="error"></p>
+    </div>
+  </div>
+
+  <!-- ===== MAIN APP ===== -->
+  <div id="app-screen" class="app-screen hidden">
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <div style="display:flex; align-items:center; gap:8px; cursor:pointer;" onclick="openProfileModal()">
+          <img id="my-avatar" src="" style="width:32px; height:32px; border-radius:50%; object-fit:cover; background:#00a884; display:none;" />
+          <span id="current-user"></span>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <button id="theme-toggle" onclick="toggleTheme()" style="background:none; border:none; color:#8696a0; cursor:pointer; font-size:16px;" title="Toggle Theme">🌓</button>
+          <button id="sound-toggle" onclick="toggleSound()" style="background:none; border:none; color:#8696a0; cursor:pointer; font-size:16px;" title="Toggle Sound">🔊</button>
+          <button onclick="handleLogout()" class="logout-btn">Logout</button>
+        </div>
+      </div>
+
+      <button class="new-group-btn" onclick="openGroupModal()">+ New Group</button>
+
+      <div style="padding: 10px 14px;">
+        <input id="search-input" type="text" placeholder="Search or start a new chat" oninput="handleSearch()" style="width:100%; padding:8px 12px; border-radius:18px; border:none; background:#2a3942; color:#e9edef; font-size:13px;" />
+      </div>
+
+      <div id="chat-list" style="flex:1; overflow-y:auto;"></div>
+    </div>
+
+    <div class="chat-panel" style="position:relative;">
+      <div id="chat-header" class="chat-header" style="display:flex; justify-content:space-between; align-items:center; min-height:56px; padding:10px 16px;">
+        <div style="display:flex; align-items:center; min-width:0; flex:1;">
+          <button id="mobile-back-btn" onclick="closeActiveChat()" style="background:none; border:none; color:#8696a0; font-size:18px; cursor:pointer; display:none; margin-right:10px; padding:0; flex-shrink:0;" title="Back to Chats">⬅️</button>
+          <div style="display:flex; flex-direction:column; justify-content:center; text-align:left; min-width:0; flex:1;">
+            <span id="chat-header-name" style="font-weight:bold; color:#e9edef; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Select a chat to start messaging</span>
+            <div id="typing-indicator" style="font-size:12px; color:#00e676; margin-top:2px; height:14px; font-weight:normal;"></div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <input id="message-search" type="text" placeholder="Search in chat..." oninput="handleMessageSearch()" class="hidden" style="padding:5px 12px; border-radius:12px; border:none; background:#2a3942; color:#e9edef; font-size:12px; width:130px;" />
+          <button id="wallpaper-picker-btn" onclick="toggleWallpaperMenu()" class="hidden" style="background:none; border:none; color:#8696a0; font-size:16px; cursor:pointer; padding:0;" title="Change Wallpaper">🎨</button>
+          
+          <div id="wallpaper-menu" class="hidden" style="position:absolute; top:55px; right:15px; background:#202c33; border:1px solid #2a3942; padding:10px; border-radius:8px; z-index:100; display:flex; gap:6px; box-shadow: 0 4px 10px rgba(0,0,0,0.4);">
+            <div onclick="setWallpaper('default')" style="width:20px; height:20px; background:#0b141a; border:1px solid #e9edef; border-radius:3px; cursor:pointer;" title="Default"></div>
+            <div onclick="setWallpaper('#1b2838')" style="width:20px; height:20px; background:#1b2838; border-radius:3px; cursor:pointer;" title="Dark Blue"></div>
+            <div onclick="setWallpaper('#0b5345')" style="width:20px; height:20px; background:#0b5345; border-radius:3px; cursor:pointer;" title="Teal"></div>
+            <div onclick="setWallpaper('#78281f')" style="width:20px; height:20px; background:#78281f; border-radius:3px; cursor:pointer;" title="Burgundy"></div>
+            <div onclick="setWallpaper('#1b4f72')" style="width:20px; height:20px; background:#1b4f72; border-radius:3px; cursor:pointer;" title="Slate Blue"></div>
+          </div>
+          
+          <div id="group-admin-actions" class="hidden" style="display:flex; gap:6px;">
+            <button onclick="handleAddMemberClick()" style="background:#2a3942; border:none; padding:5px 8px; border-radius:4px; color:#e9edef; font-size:11px; cursor:pointer;">+ Member</button>
+            <button onclick="handleRemoveMemberClick()" style="background:#2a3942; border:none; padding:5px 8px; border-radius:4px; color:#e9edef; font-size:11px; cursor:pointer;">- Member</button>
+            <button onclick="handleRenameGroupClick()" style="background:#2a3942; border:none; padding:5px 8px; border-radius:4px; color:#e9edef; font-size:11px; cursor:pointer;">✏️ Rename</button>
+          </div>
+        </div>
+      </div>
+      <div id="messages" class="messages"></div>
+      <div id="reply-preview-bar" class="hidden" style="background:#2a3942; padding:8px 12px; border-left:4px solid #00a884; display:flex; justify-content:space-between; align-items:center; font-size:12px;">
+        <div>
+          <span style="font-weight:bold; color:#00a884;">Replying to: </span>
+          <span id="reply-preview-sender" style="font-weight:bold; margin-right:5px;"></span>
+          <span id="reply-preview-text" style="color:#8696a0; display:inline-block; max-width:250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:bottom;"></span>
+        </div>
+        <button onclick="cancelReply()" style="background:none; border:none; color:#8696a0; cursor:pointer; font-size:14px;">✕</button>
+      </div>
+      <div id="emoji-picker-container" class="hidden" style="position:absolute; bottom:60px; left:15px; z-index:100;">
+        <emoji-picker style="--background:#202c33; --border-color:#2a3942; --category-icon-color:#8696a0; --category-icon-active-color:#00e676; --category-icon-active-background:#2a3942;"></emoji-picker>
+      </div>
+      <div id="chat-input-bar" class="chat-input-bar hidden">
+        <input id="media-file-input" type="file" accept="image/*,application/pdf" style="display:none;" onchange="handleFileSelected(this)" />
+        <button onclick="document.getElementById('media-file-input').click()" style="background:none; border:none; color:#8696a0; font-size:20px; cursor:pointer; padding:0 8px; display:flex; align-items:center;" title="Attach File">📎</button>
+        <button onclick="toggleEmojiPicker()" style="background:none; border:none; color:#8696a0; font-size:20px; cursor:pointer; padding:0 8px; display:flex; align-items:center;" title="Emojis">😀</button>
+        <input id="message-input" type="text" placeholder="Type a message"
+               onkeydown="if(event.key==='Enter') sendMessage()"
+               oninput="handleMessageInput()" />
+        <button onclick="sendMessage()">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== NEW GROUP MODAL ===== -->
+  <div id="group-modal" class="modal hidden">
+    <div class="modal-box">
+      <h3>Create Group</h3>
+      <input id="group-name-input" type="text" placeholder="Group name" />
+      <div id="group-member-checkboxes"></div>
+      <div class="auth-buttons">
+        <button onclick="createGroup()">Create</button>
+        <button onclick="closeGroupModal()" class="secondary">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PROFILE MODAL ===== -->
+  <div id="profile-modal" class="modal hidden">
+    <div class="modal-box">
+      <h3 style="margin-bottom:15px; color:#e9edef;">Edit Profile</h3>
+      <div style="display:flex; flex-direction:column; align-items:center; margin-bottom:15px;">
+        <img id="profile-preview-avatar" src="" style="width:80px; height:80px; border-radius:50%; object-fit:cover; background:#00a884; margin-bottom:10px;" />
+        <input id="profile-file-input" type="file" accept="image/*" style="display:none;" onchange="handleProfilePictureSelected(this)" />
+        <button onclick="document.getElementById('profile-file-input').click()" style="padding:6px 12px; background:#2a3942; border:none; border-radius:6px; color:#e9edef; font-size:12px; cursor:pointer;">Change Picture</button>
+      </div>
+      <input id="profile-bio-input" type="text" placeholder="Bio / About text" style="width: 100%; padding: 10px; margin-bottom: 15px; border-radius: 6px; border: none; background: #2a3942; color: #e9edef;" />
+      <div class="auth-buttons">
+        <button onclick="saveProfile()">Save</button>
+        <button onclick="closeProfileModal()" class="secondary">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== FORWARD MODAL ===== -->
+  <div id="forward-modal" class="modal hidden">
+    <div class="modal-box">
+      <h3 style="margin-bottom:15px; color:#e9edef;">Forward Message</h3>
+      <div id="forward-targets-list" style="max-height:220px; overflow-y:auto; margin-bottom:15px; text-align:left;"></div>
+      <div class="auth-buttons">
+        <button onclick="closeForwardModal()" class="secondary" style="width:100%;">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
