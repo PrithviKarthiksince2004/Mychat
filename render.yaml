@@ -55,7 +55,3 @@ services:
         generateValue: true
       - key: UPLOAD_DIR
         value: /app/uploads
-    disk:
-      name: uploads
-      mountPath: /app/uploads
-      sizeGB: 1
