@@ -1,0 +1,61 @@
+services:
+  - type: pserv
+    name: mychat-mysql
+    runtime: docker
+    repo: https://github.com/render-examples/mysql
+    plan: starter
+    envVars:
+      - key: MYSQL_DATABASE
+        value: whatsapp_clone
+      - key: MYSQL_USER
+        value: mychat
+      - key: MYSQL_PASSWORD
+        generateValue: true
+      - key: MYSQL_ROOT_PASSWORD
+        generateValue: true
+    disk:
+      name: mysql-data
+      mountPath: /var/lib/mysql
+      sizeGB: 10
+
+  - type: web
+    name: mychat
+    runtime: docker
+    repo: https://github.com/PrithviKarthiksince2004/Mychat
+    branch: main
+    plan: free
+    healthCheckPath: /
+    envVars:
+      - key: MYSQLHOST
+        fromService:
+          name: mychat-mysql
+          type: pserv
+          property: host
+      - key: MYSQLPORT
+        fromService:
+          name: mychat-mysql
+          type: pserv
+          property: port
+      - key: MYSQLDATABASE
+        fromService:
+          name: mychat-mysql
+          type: pserv
+          envVarKey: MYSQL_DATABASE
+      - key: MYSQLUSER
+        fromService:
+          name: mychat-mysql
+          type: pserv
+          envVarKey: MYSQL_USER
+      - key: MYSQLPASSWORD
+        fromService:
+          name: mychat-mysql
+          type: pserv
+          envVarKey: MYSQL_PASSWORD
+      - key: JWT_SECRET
+        generateValue: true
+      - key: UPLOAD_DIR
+        value: /app/uploads
+    disk:
+      name: uploads
+      mountPath: /app/uploads
+      sizeGB: 1

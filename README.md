@@ -88,3 +88,41 @@ We deployed the application live on Railway. The steps taken:
 
 5. **Persistent Storage (Optional for uploads):**
    To make uploads persistent across container restarts, mount a **Persistent Volume** on Railway to `/app/uploads` (or set the `UPLOAD_DIR` variable to a mounted directory path).
+
+---
+
+## Deploy on Render (Blueprint)
+
+This repo includes a `render.yaml` Blueprint that provisions:
+
+- **mychat** — Docker web service (Spring Boot)
+- **mychat-mysql** — private MySQL service with persistent disk
+- **uploads disk** — persistent storage for media files
+
+### One-click deploy
+
+1. Push `Dockerfile`, `render.yaml`, and `.dockerignore` to the `main` branch on GitHub.
+2. Go to [Render Dashboard → New Blueprint](https://dashboard.render.com/blueprint/new).
+3. Connect GitHub and select `PrithviKarthiksince2004/Mychat`.
+4. Review the services and click **Apply**.
+5. Wait for both services to deploy (first build takes ~5–10 minutes).
+6. Open the **mychat** web service URL (e.g. `https://mychat.onrender.com`).
+
+### Manual deploy (without Blueprint)
+
+1. **MySQL:** New → Private Service → Docker → use [render-examples/mysql](https://github.com/render-examples/mysql). Add a 10 GB disk at `/var/lib/mysql` and set `MYSQL_DATABASE=whatsapp_clone`.
+2. **Web app:** New → Web Service → connect this repo → Runtime: **Docker**.
+3. **Environment variables** on the web service:
+
+   | Key | Value |
+   |-----|-------|
+   | `MYSQLHOST` | Internal hostname of MySQL service |
+   | `MYSQLPORT` | `3306` |
+   | `MYSQLDATABASE` | `whatsapp_clone` |
+   | `MYSQLUSER` | Same as MySQL service |
+   | `MYSQLPASSWORD` | Same as MySQL service |
+   | `JWT_SECRET` | Random 32+ character string |
+   | `UPLOAD_DIR` | `/app/uploads` |
+
+4. Add a **1 GB disk** mounted at `/app/uploads` on the web service.
+5. Deploy and open the generated URL.
